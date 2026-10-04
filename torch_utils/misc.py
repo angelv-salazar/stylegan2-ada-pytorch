@@ -112,7 +112,7 @@ class InfiniteSampler(torch.utils.data.Sampler):
         assert num_replicas > 0
         assert 0 <= rank < num_replicas
         assert 0 <= window_size <= 1
-        super().__init__(dataset)
+        super().__init__()
         self.dataset = dataset
         self.rank = rank
         self.num_replicas = num_replicas
@@ -166,7 +166,8 @@ def copy_params_and_buffers(src_module, dst_module, require_all=False):
 @contextlib.contextmanager
 def ddp_sync(module, sync):
     assert isinstance(module, torch.nn.Module)
-    if sync or not isinstance(module, torch.nn.parallel.DistributedDataParallel):
+    assert not isinstance(module, torch.jit.ScriptModule)
+    if sync:
         yield
     else:
         with module.no_sync():

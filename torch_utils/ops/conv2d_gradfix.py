@@ -48,12 +48,19 @@ def _should_use_custom_op(input):
     assert isinstance(input, torch.Tensor)
     if (not enabled) or (not torch.backends.cudnn.enabled):
         return False
+
+    # The original conv2d_gradfix workaround is only needed for
+    # old PyTorch versions and is not compatible with PyTorch >= 1.11.
+    version_parts = torch.__version__.split('+')[0].split('.')
+    torch_version = (int(version_parts[0]), int(version_parts[1]))
+
+    if torch_version >= (1, 11):
+        return False
+
     if input.device.type != 'cuda':
         return False
-    if any(torch.__version__.startswith(x) for x in ['1.7.', '1.8.', '1.9', '1.10.']):
-        return True
-    warnings.warn(f'conv2d_gradfix not supported on PyTorch {torch.__version__}. Falling back to torch.nn.functional.conv2d().')
-    return False
+
+    return True
 
 def _tuple_of_ints(xs, ndim):
     xs = tuple(xs) if isinstance(xs, (tuple, list)) else (xs,) * ndim
